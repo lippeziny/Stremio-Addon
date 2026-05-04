@@ -3,9 +3,9 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.2.5",
-  name: "Streams Ias+Lippe (Fixed)",
-  description: "Euphoria & Miraculous - Anti-Block",
+  version: "2.2.6",
+  name: "Streams Ias+Lippe (V3)",
+  description: "Euphoria & Miraculous - Bypass 403",
   resources: ["stream"],
   types: ["series"],
   idPrefixes: ["tt8772296", "tt2580046"], 
@@ -14,13 +14,10 @@ const builder = new addonBuilder({
 
 builder.defineStreamHandler(async (args) => {
   const [ttid, season, episode] = args.id.split(":");
-  
-  const streams = [
-    {
-      title: "🧪 TESTE: Addon Conectado",
-      url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    }
-  ];
+  const streams = [{
+    title: "🧪 TESTE: Addon Online",
+    url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+  }];
 
   let pageUrl = "";
   let siteReferer = "";
@@ -36,28 +33,33 @@ builder.defineStreamHandler(async (args) => {
   try {
     const response = await axios.get(pageUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        // Disfarce de Galaxy A15 (Seu celular)
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-A155F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
         'Referer': siteReferer,
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Origin': siteReferer,
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Upgrade-Insecure-Requests': '1',
+        'Cache-Control': 'max-age=0'
       },
-      timeout: 10000
+      timeout: 12000
     });
 
     const html = response.data;
     
-    // Regex ajustado para capturar o link completo com o token de segurança
-    const regexVideo = /https?[\/\w\d\.\-\\]+\.m3u8[\w\d\:\.\-\/\\%\?\=\&\#]*/gi;
+    // REGEX REFORÇADO: Pega o link mesmo com o token gigante (?hdnts=...)
+    const regexVideo = /https?[\/\w\d\.\-\\]+\.m3u8[^\s"']*/gi;
     const matches = html.match(regexVideo);
 
     if (matches) {
-      // Filtrar para pegar o link que realmente pertence ao player de vídeo
       const videoLink = matches.find(link => link.includes('stream') || link.includes('321movies') || link.includes('cuevana'));
 
       if (videoLink) {
-        let directLink = videoLink.replace(/\\/g, '');
+        let directLink = videoLink.replace(/\\/g, ''); // Limpa barras do JSON
 
         streams.push({
           title: `🎬 Stream - T${season} E${episode}`,
@@ -67,16 +69,15 @@ builder.defineStreamHandler(async (args) => {
             proxyHeaders: {
               "common": { 
                 "Referer": siteReferer,
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-A155F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
               }
             }
           }
         });
-        console.log("✅ Link extraído com sucesso!");
       }
     }
   } catch (error) {
-    console.error(`❌ Erro 403 ou de Conexão: ${error.message}`);
+    console.error(`Status: ${error.response ? error.response.status : 'Erro de rede'}`);
   }
 
   return { streams };
