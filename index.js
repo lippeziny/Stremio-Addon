@@ -3,12 +3,11 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.2.2",
+  version: "2.2.3",
   name: "Streams Ias+Lippe (Multi)",
-  description: "Euphoria & Miraculous - Corrigido",
+  description: "Euphoria & Miraculous - Regex Universal",
   resources: ["stream"],
   types: ["series"],
-  // IDs CORRETOS: Euphoria e Miraculous (Série)
   idPrefixes: ["tt8772296", "tt2580046"], 
   catalogs: []
 });
@@ -32,7 +31,7 @@ builder.defineStreamHandler(async (args) => {
     pageUrl = `https://ww20.321moviesfree.com/pt/detail/drama/kTfB7Zz0UgZbRGOZEPTgU-Euphoria-Season-${season}/${episode}`;
     referer = "https://ww20.321moviesfree.com/";
   } else if (ttid === "tt2580046") {
-    // MIRACULOUS (Usando o ID que você confirmou)
+    // MIRACULOUS
     pageUrl = `https://es.cuevana4br.com/pt/detail/drama/sqA4FSfx1TFbiDPgieGd9-Miraculous-Tales-of-Ladybug--Cat-Noir-Season-${season}/${episode}`;
     referer = "https://es.cuevana4br.com/";
   } else {
@@ -51,11 +50,14 @@ builder.defineStreamHandler(async (args) => {
 
     const html = response.data;
     
-    // Regex Multi-Site (Pega 321movies ou Cuevana4br)
-    const regexVideo = /https?:\/\/[a-z0-9-]+\.(321moviesfree|cuevana4br)\.com\/[^\s"']+\.m3u8[^\s"']*/gi;
+    // 🔥 REGEX UNIVERSAL 🔥
+    // Captura qualquer link HTTP/HTTPS que contenha .m3u8, 
+    // incluindo todos os tokens e códigos de segurança gerados depois do formato.
+    const regexVideo = /https?(?:\\?\/){2}[^\s"'<>]+?\.m3u8[^\s"'<>]*/gi;
     const matches = html.match(regexVideo);
 
     if (matches && matches.length > 0) {
+      // Remove as barras escapadas (\/) que vêm no formato JSON do HTML
       let directLink = matches[0].replace(/\\/g, '');
 
       streams.push({
@@ -71,17 +73,16 @@ builder.defineStreamHandler(async (args) => {
           }
         }
       });
-      console.log(`✅ Sucesso! Link extraído para o ID ${ttid}`);
+      console.log(`✅ Sucesso! Link extraído: ${directLink.substring(0, 60)}...`);
     } else {
       console.log(`⚠️ Link não encontrado na página para ${ttid} T${season} E${episode}`);
     }
 
   } catch (error) {
-    console.error(`❌ Erro no Termux: ${error.message}`);
+    console.error(`❌ Erro no código: ${error.message}`);
   }
 
   return { streams };
 });
 
 serveHTTP(builder.getInterface(), { port: process.env.PORT || 7000 });
-
