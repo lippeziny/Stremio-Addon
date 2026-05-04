@@ -3,9 +3,9 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.3.0",
-  name: "Streams Ias+Lippe (Multi)",
-  description: "Euphoria & Miraculous - Seleção de Qualidade",
+  version: "2.3.1",
+  name: "Streams Ias+Lippe (Alta Qualidade)",
+  description: "Apenas 720p e 1080p",
   resources: ["stream"],
   types: ["series"],
   idPrefixes: ["tt8772296", "tt2580046"], 
@@ -42,17 +42,14 @@ builder.defineStreamHandler(async (args) => {
     const matches = html.match(regexVideo);
 
     if (matches && matches.length > 0) {
-      // Remove duplicatas e limpa as barras
       let allLinks = [...new Set(matches.map(link => link.replace(/\\/g, '')))];
 
-      // Criar uma lista de streams para cada qualidade encontrada
       allLinks.forEach(link => {
-        let quality = "Qualidade Padrão";
-        
-        // Mapeamento baseado nos links que você me mandou
+        // FILTRO DE QUALIDADE: Ignora se for LD (Low Definition)
+        if (link.includes("-ld.m3u8")) return; 
+
+        let quality = "720p HD";
         if (link.includes("-hd.m3u8")) quality = "1080p Full HD";
-        else if (link.includes("-sd.m3u8")) quality = "720p HD (SD)";
-        else if (link.includes("-ld.m3u8")) quality = "480p/540p LD";
 
         streams.push({
           title: `🎬 [${quality}] - T${season} E${episode}`,
@@ -69,22 +66,16 @@ builder.defineStreamHandler(async (args) => {
         });
       });
 
-      // Ordena para o melhor link aparecer primeiro na lista do Stremio
-      streams.sort((a, b) => {
-        if (a.title.includes("1080p")) return -1;
-        if (b.title.includes("1080p")) return 1;
-        if (a.title.includes("720p")) return -1;
-        return 1;
-      });
-
+      // Ordena para o 1080p ficar sempre no topo
+      streams.sort((a, b) => a.title.includes("1080p") ? -1 : 1);
     }
   } catch (error) {
     console.error(`❌ Erro: ${error.message}`);
   }
 
-  // Adiciona o vídeo de teste no final da lista
+  // O vídeo de teste a gente deixa pra você saber que o addon não caiu
   streams.push({
-    title: "🧪 TESTE: Addon Online",
+    title: "🧪 TESTE: Addon Conectado",
     url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
   });
 
