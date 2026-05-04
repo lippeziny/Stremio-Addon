@@ -3,12 +3,11 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.2.7",
+  version: "2.2.8",
   name: "Streams Ias+Lippe (Multi)",
-  description: "Euphoria & Miraculous - Versão Estável",
+  description: "Euphoria & Miraculous - Qualidade HD",
   resources: ["stream"],
   types: ["series"],
-  // IDs: tt8772296 = Euphoria | tt2580046 = Miraculous
   idPrefixes: ["tt8772296", "tt2580046"], 
   catalogs: []
 });
@@ -18,7 +17,7 @@ builder.defineStreamHandler(async (args) => {
   
   const streams = [
     {
-      title: "🧪 TESTE: Addon no Termux",
+      title: "🧪 TESTE: Addon Ativo",
       url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
     }
   ];
@@ -26,7 +25,6 @@ builder.defineStreamHandler(async (args) => {
   let pageUrl = "";
   let referer = "";
 
-  // Lógica de URLs (Mantendo a estrutura que você enviou)
   if (ttid === "tt8772296") {
     pageUrl = `https://ww20.321moviesfree.com/pt/detail/drama/kTfB7Zz0UgZbRGOZEPTgU-Euphoria-Season-${season}/${episode}`;
     referer = "https://ww20.321moviesfree.com/";
@@ -38,7 +36,6 @@ builder.defineStreamHandler(async (args) => {
   }
 
   try {
-    // Usando os headers do código que você mandou (que não dão 403)
     const response = await axios.get(pageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
@@ -49,24 +46,20 @@ builder.defineStreamHandler(async (args) => {
     });
 
     const html = response.data;
-    
-    // REGEX ATUALIZADO: Mantém a base do seu mas aceita subdomínios (como stream-limit-vid) 
-    // e captura o token longo após o .m3u8
     const regexVideo = /https?:\/\/[a-z0-9-]+\.(321moviesfree|cuevana4br)\.com\/[^\s"']+\.m3u8[^\s"']*/gi;
     const matches = html.match(regexVideo);
 
-        if (matches && matches.length > 0) {
+    if (matches && matches.length > 0) {
       // 1. Limpa as barras e remove duplicatas
       let allLinks = [...new Set(matches.map(link => link.replace(/\\/g, '')))];
 
       // 2. Ordem de prioridade: HD -> SD -> LD
-      // Ele vai tentar achar o link que termina com cada tag na ordem de qualidade
       let directLink = allLinks.find(l => l.includes('-hd.m3u8')) || 
                        allLinks.find(l => l.includes('-sd.m3u8')) || 
                        allLinks.find(l => l.includes('-ld.m3u8')) || 
                        allLinks[0];
 
-      // 3. Define uma etiqueta visual para você saber qual ele pegou
+      // 3. Define a etiqueta visual
       let qualityLabel = "SD";
       if (directLink.includes("-hd")) qualityLabel = "1080p/720p HD";
       if (directLink.includes("-ld")) qualityLabel = "480p/360p LD";
@@ -84,12 +77,9 @@ builder.defineStreamHandler(async (args) => {
           }
         }
       });
-      console.log(`✅ Qualidade selecionada: ${qualityLabel}`);
-    }
-
-      console.log(`✅ Sucesso! Link extraído para T${season} E${episode}`);
+      console.log(`✅ Sucesso! Link extraído em ${qualityLabel}`);
     } else {
-      console.log(`⚠️ Link não encontrado no HTML.`);
+      console.log(`⚠️ Link não encontrado no HTML para T${season} E${episode}`);
     }
 
   } catch (error) {
