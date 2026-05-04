@@ -3,9 +3,9 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.2.3",
+  version: "2.2.4",
   name: "Streams Ias+Lippe (Multi)",
-  description: "Euphoria & Miraculous - Regex Universal",
+  description: "Euphoria & Miraculous - Versão Estável",
   resources: ["stream"],
   types: ["series"],
   idPrefixes: ["tt8772296", "tt2580046"], 
@@ -17,7 +17,7 @@ builder.defineStreamHandler(async (args) => {
   
   const streams = [
     {
-      title: "🧪 TESTE: Addon no Termux",
+      title: "🧪 TESTE: Addon Ativo",
       url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
     }
   ];
@@ -25,61 +25,56 @@ builder.defineStreamHandler(async (args) => {
   let pageUrl = "";
   let referer = "";
 
-  // Lógica de Direcionamento por ID
   if (ttid === "tt8772296") {
-    // EUPHORIA
+    // EUPHORIA - Note que usamos o padrão do site para a S3
     pageUrl = `https://ww20.321moviesfree.com/pt/detail/drama/kTfB7Zz0UgZbRGOZEPTgU-Euphoria-Season-${season}/${episode}`;
     referer = "https://ww20.321moviesfree.com/";
   } else if (ttid === "tt2580046") {
     // MIRACULOUS
     pageUrl = `https://es.cuevana4br.com/pt/detail/drama/sqA4FSfx1TFbiDPgieGd9-Miraculous-Tales-of-Ladybug--Cat-Noir-Season-${season}/${episode}`;
     referer = "https://es.cuevana4br.com/";
-  } else {
-    return { streams: [] };
   }
 
   try {
     const response = await axios.get(pageUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
-        'Referer': referer,
-        'Accept-Language': 'pt-BR,pt;q=0.9'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': referer
       },
       timeout: 10000
     });
 
     const html = response.data;
     
-    // 🔥 REGEX UNIVERSAL 🔥
-    // Captura qualquer link HTTP/HTTPS que contenha .m3u8, 
-    // incluindo todos os tokens e códigos de segurança gerados depois do formato.
-    const regexVideo = /https?(?:\\?\/){2}[^\s"'<>]+?\.m3u8[^\s"'<>]*/gi;
+    // REGEX REFINADO: Busca links .m3u8 específicos desses domínios, com ou sem tokens
+    const regexVideo = /https?[\(\)\[\]\w\d\:\.\-\/\\%]+\.m3u8[\w\d\:\.\-\/\\%\?\=\&\#]*/gi;
     const matches = html.match(regexVideo);
 
-    if (matches && matches.length > 0) {
-      // Remove as barras escapadas (\/) que vêm no formato JSON do HTML
-      let directLink = matches[0].replace(/\\/g, '');
+    if (matches) {
+      // Pega o primeiro link que contenha o nome do servidor de vídeo
+      const videoLink = matches.find(link => link.includes('321moviesfree') || link.includes('cuevana4br') || link.includes('stream'));
 
-      streams.push({
-        title: `🎬 Stream - T${season} E${episode}`,
-        url: directLink,
-        behaviorHints: {
-          notInterstitials: true,
-          proxyHeaders: {
-            "common": { 
-              "Referer": referer,
-              "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+      if (videoLink) {
+        // Limpa barras invertidas (comum em arquivos JSON/HTML)
+        let directLink = videoLink.replace(/\\/g, '');
+
+        streams.push({
+          title: `🎬 Stream - T${season} E${episode}`,
+          url: directLink,
+          behaviorHints: {
+            notInterstitials: true,
+            proxyHeaders: {
+              "common": { 
+                "Referer": referer,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              }
             }
           }
-        }
-      });
-      console.log(`✅ Sucesso! Link extraído: ${directLink.substring(0, 60)}...`);
-    } else {
-      console.log(`⚠️ Link não encontrado na página para ${ttid} T${season} E${episode}`);
+        });
+      }
     }
-
   } catch (error) {
-    console.error(`❌ Erro no código: ${error.message}`);
+    console.error(`ERRO: ${error.message}`);
   }
 
   return { streams };
