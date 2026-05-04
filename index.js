@@ -55,12 +55,24 @@ builder.defineStreamHandler(async (args) => {
     const regexVideo = /https?:\/\/[a-z0-9-]+\.(321moviesfree|cuevana4br)\.com\/[^\s"']+\.m3u8[^\s"']*/gi;
     const matches = html.match(regexVideo);
 
-    if (matches && matches.length > 0) {
-      // Remove barras invertidas que o site às vezes coloca no HTML
-      let directLink = matches[0].replace(/\\/g, '');
+        if (matches && matches.length > 0) {
+      // 1. Limpa as barras e remove duplicatas
+      let allLinks = [...new Set(matches.map(link => link.replace(/\\/g, '')))];
+
+      // 2. Ordem de prioridade: HD -> SD -> LD
+      // Ele vai tentar achar o link que termina com cada tag na ordem de qualidade
+      let directLink = allLinks.find(l => l.includes('-hd.m3u8')) || 
+                       allLinks.find(l => l.includes('-sd.m3u8')) || 
+                       allLinks.find(l => l.includes('-ld.m3u8')) || 
+                       allLinks[0];
+
+      // 3. Define uma etiqueta visual para você saber qual ele pegou
+      let qualityLabel = "SD";
+      if (directLink.includes("-hd")) qualityLabel = "1080p/720p HD";
+      if (directLink.includes("-ld")) qualityLabel = "480p/360p LD";
 
       streams.push({
-        title: `🎬 Stream - T${season} E${episode}`,
+        title: `🎬 Stream [${qualityLabel}] - T${season} E${episode}`,
         url: directLink,
         behaviorHints: {
           notInterstitials: true,
@@ -72,6 +84,9 @@ builder.defineStreamHandler(async (args) => {
           }
         }
       });
+      console.log(`✅ Qualidade selecionada: ${qualityLabel}`);
+    }
+
       console.log(`✅ Sucesso! Link extraído para T${season} E${episode}`);
     } else {
       console.log(`⚠️ Link não encontrado no HTML.`);
