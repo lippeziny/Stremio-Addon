@@ -3,9 +3,9 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.2.4",
-  name: "Streams Ias+Lippe (Multi)",
-  description: "Euphoria & Miraculous - Versão Estável",
+  version: "2.2.5",
+  name: "Streams Ias+Lippe (Fixed)",
+  description: "Euphoria & Miraculous - Anti-Block",
   resources: ["stream"],
   types: ["series"],
   idPrefixes: ["tt8772296", "tt2580046"], 
@@ -17,45 +17,46 @@ builder.defineStreamHandler(async (args) => {
   
   const streams = [
     {
-      title: "🧪 TESTE: Addon Ativo",
+      title: "🧪 TESTE: Addon Conectado",
       url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
     }
   ];
 
   let pageUrl = "";
-  let referer = "";
+  let siteReferer = "";
 
   if (ttid === "tt8772296") {
-    // EUPHORIA - Note que usamos o padrão do site para a S3
     pageUrl = `https://ww20.321moviesfree.com/pt/detail/drama/kTfB7Zz0UgZbRGOZEPTgU-Euphoria-Season-${season}/${episode}`;
-    referer = "https://ww20.321moviesfree.com/";
+    siteReferer = "https://ww20.321moviesfree.com/";
   } else if (ttid === "tt2580046") {
-    // MIRACULOUS
     pageUrl = `https://es.cuevana4br.com/pt/detail/drama/sqA4FSfx1TFbiDPgieGd9-Miraculous-Tales-of-Ladybug--Cat-Noir-Season-${season}/${episode}`;
-    referer = "https://es.cuevana4br.com/";
+    siteReferer = "https://es.cuevana4br.com/";
   }
 
   try {
     const response = await axios.get(pageUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': referer
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': siteReferer,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       },
       timeout: 10000
     });
 
     const html = response.data;
     
-    // REGEX REFINADO: Busca links .m3u8 específicos desses domínios, com ou sem tokens
-    const regexVideo = /https?[\(\)\[\]\w\d\:\.\-\/\\%]+\.m3u8[\w\d\:\.\-\/\\%\?\=\&\#]*/gi;
+    // Regex ajustado para capturar o link completo com o token de segurança
+    const regexVideo = /https?[\/\w\d\.\-\\]+\.m3u8[\w\d\:\.\-\/\\%\?\=\&\#]*/gi;
     const matches = html.match(regexVideo);
 
     if (matches) {
-      // Pega o primeiro link que contenha o nome do servidor de vídeo
-      const videoLink = matches.find(link => link.includes('321moviesfree') || link.includes('cuevana4br') || link.includes('stream'));
+      // Filtrar para pegar o link que realmente pertence ao player de vídeo
+      const videoLink = matches.find(link => link.includes('stream') || link.includes('321movies') || link.includes('cuevana'));
 
       if (videoLink) {
-        // Limpa barras invertidas (comum em arquivos JSON/HTML)
         let directLink = videoLink.replace(/\\/g, '');
 
         streams.push({
@@ -65,16 +66,17 @@ builder.defineStreamHandler(async (args) => {
             notInterstitials: true,
             proxyHeaders: {
               "common": { 
-                "Referer": referer,
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "Referer": siteReferer,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
               }
             }
           }
         });
+        console.log("✅ Link extraído com sucesso!");
       }
     }
   } catch (error) {
-    console.error(`ERRO: ${error.message}`);
+    console.error(`❌ Erro 403 ou de Conexão: ${error.message}`);
   }
 
   return { streams };
