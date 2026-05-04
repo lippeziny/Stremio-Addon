@@ -3,12 +3,13 @@ const axios = require("axios");
 
 const builder = new addonBuilder({
   id: "org.kelvin.streamexistente",
-  version: "2.3.1",
-  name: "Streams Ias+Lippe (Alta Qualidade)",
-  description: "Apenas 720p e 1080p",
+  version: "2.3.2",
+  name: "Streams Ias+Lippe (SAO Update)",
+  description: "Euphoria, Miraculous & SAO - Full HD",
   resources: ["stream"],
   types: ["series"],
-  idPrefixes: ["tt8772296", "tt2580046"], 
+  // Adicionado tt2250192 para Sword Art Online
+  idPrefixes: ["tt8772296", "tt2580046", "tt2250192"], 
   catalogs: []
 });
 
@@ -25,6 +26,16 @@ builder.defineStreamHandler(async (args) => {
   } else if (ttid === "tt2580046") {
     pageUrl = `https://es.cuevana4br.com/pt/detail/drama/sqA4FSfx1TFbiDPgieGd9-Miraculous-Tales-of-Ladybug--Cat-Noir-Season-${season}/${episode}`;
     referer = "https://es.cuevana4br.com/";
+  } else if (ttid === "tt2250192") {
+    // Lógica para Sword Art Online (SushiAnimes)
+    referer = "https://sushianimes.com.br/";
+    // O site usa mapeamentos diferentes para as temporadas
+    if (season === "1") {
+      pageUrl = `https://sushianimes.com.br/anime/sword-art-online-dublado-864-1-season-1-episode-${episode}`;
+    } else {
+      // Exemplo para temporada 3 conforme enviado
+      pageUrl = `https://sushianimes.com.br/anime/sword-art-online-dublado-864-2-season-3-episode-${episode}`;
+    }
   }
 
   try {
@@ -38,18 +49,22 @@ builder.defineStreamHandler(async (args) => {
     });
 
     const html = response.data;
-    const regexVideo = /https?:\/\/[a-z0-9-]+\.(321moviesfree|cuevana4br)\.com\/[^\s"']+\.m3u8[^\s"']*/gi;
+    // Regex atualizado para capturar .m3u8 e .mp4 de todos os domínios suportados
+    const regexVideo = /https?:\/\/[a-z0-9-.]+\.(321moviesfree|cuevana4br|pixel-sus-4k-image)\.com\/[^\s"']+\.(m3u8|mp4)[^\s"']*/gi;
     const matches = html.match(regexVideo);
 
     if (matches && matches.length > 0) {
       let allLinks = [...new Set(matches.map(link => link.replace(/\\/g, '')))];
 
       allLinks.forEach(link => {
-        // FILTRO DE QUALIDADE: Ignora se for LD (Low Definition)
+        // Filtro: Ignora se for qualidade baixa (LD)
         if (link.includes("-ld.m3u8")) return; 
 
         let quality = "720p HD";
-        if (link.includes("-hd.m3u8")) quality = "1080p Full HD";
+        // Marca como 1080p se tiver o sufixo ou se for do novo CDN 4k
+        if (link.includes("-hd.m3u8") || link.includes("4k-image")) {
+          quality = "1080p Full HD";
+        }
 
         streams.push({
           title: `🎬 [${quality}] - T${season} E${episode}`,
@@ -66,16 +81,15 @@ builder.defineStreamHandler(async (args) => {
         });
       });
 
-      // Ordena para o 1080p ficar sempre no topo
+      // Ordena para que a melhor qualidade apareça primeiro
       streams.sort((a, b) => a.title.includes("1080p") ? -1 : 1);
     }
   } catch (error) {
     console.error(`❌ Erro: ${error.message}`);
   }
 
-  // O vídeo de teste a gente deixa pra você saber que o addon não caiu
   streams.push({
-    title: "🧪 TESTE: Addon Conectado",
+    title: "🧪 TESTE: Addon Online",
     url: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
   });
 
